@@ -33,11 +33,15 @@ jobs:
       - name: Check for changes in training_data.csv
         id: check_changes
         run: |
-          if git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep 'training_data.csv'; then
-            echo "changed=true" >> $GITHUB_OUTPUT
-          else
-            echo "changed=false" >> $GITHUB_OUTPUT
-          fi
+           if [ "${{ github.event.before }}" = "0000000000000000000000000000000000000000" ]; then
+             echo "changed=true" >> $GITHUB_OUTPUT
+           else
+             if git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep 'training_data.csv'; then
+               echo "changed=true" >> $GITHUB_OUTPUT
+             else
+               echo "changed=false" >> $GITHUB_OUTPUT
+             fi
+             fi
 
       - name: Train model if data changed
         if: steps.check_changes.outputs.changed == 'true'
