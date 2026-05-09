@@ -11,6 +11,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -22,14 +23,36 @@ jobs:
       - name: Train model
         run: python train_model.py
         
-      - name: List files
+      - name: List generated files
         run: ls -la
         
-      - name: Create Release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: |
-            linear_model.txt
-            linear_model.pkl
+      - name: Create GitHub Release
+        id: create_release
+        uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ github.run_number }}
+          release_name: Release v${{ github.run_number }}
+          draft: false
+          prerelease: false
+
+      - name: Upload linear_model.txt
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./linear_model.txt
+          asset_name: linear_model.txt
+          asset_content_type: text/plain
+
+      - name: Upload linear_model.pkl
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./linear_model.pkl
+          asset_name: linear_model.pkl
+          asset_content_type: application/octet-stream
