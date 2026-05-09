@@ -1,3 +1,4 @@
+
 on:
   push:
     branches: [ main ]
@@ -9,23 +10,37 @@ jobs:
       contents: write
 
     steps:
-      - name: Checkout repository
+      # 1. 检出主仓库代码
+      - name: Checkout main repo
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
+      # 2. 设置Python环境
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
+      # 3. 安装依赖
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install pandas scikit-learn joblib
 
+      # 4. 训练模型（生成文件）
       - name: Train model
         run: |
           python train_model.py
 
+      # 5. 保存模型文件到临时目录（关键！避免被后续操作误删）
+      - name: Save model files to temp
+        run: |
+          mkdir -p /tmp/model
+          cp linear_model.txt /tmp/model/
+          cp linear_model.pkl /tmp/model/
+
+      # 6. 创建并发布GitHub Release（完成作业核心目标）
       - name: Create GitHub Release
         id: create_release
         uses: actions/create-release@v1
@@ -57,3 +72,21 @@ jobs:
           asset_path: ./linear_model.pkl
           asset_name: linear_model.pkl
           asset_content_type: application/octet-stream
+
+      # 7. 同步模型文件到release分支（不影响主工作区，零报错）
+      - name: Checkout release branch
+        uses: actions/checkout@v4
+        with:
+          ref: release
+          path: release-branch
+
+      - name: Update release branch
+        run: |
+          cd release-branch
+          cp /tmp/model/linear_model.txt .
+          cp /tmp/model/linear_model.pkl .
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add linear_model.txt linear_model.pkl
+          git commit -m "Update model from CI/CD"
+          git push origin release
