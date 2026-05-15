@@ -1,0 +1,36 @@
+name: Sentiment Analysis CI/CD
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'sentiment-analysis/**'
+
+jobs:
+  train:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.11
+
+      - name: Install dependencies
+        run: |
+          pip install pandas scikit-learn joblib datasets
+
+      - name: Train sentiment model
+        run: python sentiment-analysis/train_sentiment.py
+
+      - name: Upload to GitHub Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            sentiment-analysis/logistic_model.pkl
+            sentiment-analysis/tfidf_vectorizer.pkl
+            sentiment-analysis/report.txt
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
