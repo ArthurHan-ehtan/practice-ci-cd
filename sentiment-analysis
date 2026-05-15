@@ -1,0 +1,37 @@
+import pandas as pd
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score
+import joblib
+from datasets import load_dataset
+
+# 加载公开IMDB数据
+dataset = load_dataset("imdb", split="train[:1000]")
+df = pd.DataFrame(dataset)
+X = df["text"]
+y = df["label"]
+
+# 文本向量化
+vectorizer = TfidfVectorizer(max_features=2000)
+X_tfidf = vectorizer.fit_transform(X)
+
+# 划分训练/测试集
+X_train, X_test, y_train, y_test = train_test_split(X_tfidf, y, test_size=0.2, random_state=42)
+
+# 训练逻辑回归模型
+model = LogisticRegression()
+model.fit(X_train, y_train)
+
+# 评估
+y_pred = model.predict(X_test)
+acc = accuracy_score(y_test, y_pred)
+print(f"Test Accuracy: {acc:.4f}")
+
+# 保存模型和向量化器
+joblib.dump(model, "sentiment-analysis/logistic_model.pkl")
+joblib.dump(vectorizer, "sentiment-analysis/tfidf_vectorizer.pkl")
+
+# 保存报告
+with open("sentiment-analysis/report.txt", "w") as f:
+    f.write(f"Test Accuracy: {acc:.4f}\n")
